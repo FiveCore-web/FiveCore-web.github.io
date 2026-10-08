@@ -92,29 +92,16 @@
     <button type="button" onclick="document.getElementById('app-promo-modal-overlay').classList.remove('hidden'); document.getElementById('bottom-nav').classList.add('nav-hidden');" style="background: white; border: none; padding: 8px 16px; font-weight: 700; cursor: pointer; font-family: 'Nunito', sans-serif; color: #afafaf;">Приложение</button>
 </div>
 <script>
-    // Сравнивает версии вида "1.0.0" по частям (не просто как текст, чтобы "1.10.0"
-    // не считалось "меньше" чем "1.9.0" при сравнении строк)
-    function isVersionOutdated(current, latest) {
-        const a = String(current).split('.').map(Number);
-        const b = String(latest).split('.').map(Number);
-        for (let i = 0; i < Math.max(a.length, b.length); i++) {
-            const x = a[i] || 0, y = b[i] || 0;
-            if (x < y) return true;
-            if (x > y) return false;
-        }
-        return false;
-    }
-
-if (window.AndroidNative && typeof window.AndroidNative.getAppVersion === 'function') {
+    if (window.AndroidNative && typeof window.AndroidNative.getAppVersion === 'function') {
         // сразу прячем — мы точно внутри приложения, по умолчанию кнопка не нужна
         document.getElementById('app-download-btn-group').style.display = 'none';
 
-        const currentVersion = window.AndroidNative.getAppVersion();
+        const currentVersion = String(window.AndroidNative.getAppVersion());
         fetch('https://fivecore-web.github.io/app-version.json')
             .then(res => res.json())
             .then(data => {
-                // версия устарела — только тогда показываем кнопку обратно
-                if (isVersionOutdated(currentVersion, data.latestVersion)) {
+                // версии не совпали строка в строку — показываем кнопку обратно
+                if (String(data.latestVersion) !== currentVersion) {
                     document.getElementById('app-download-btn-group').style.display = '';
                 }
             })
