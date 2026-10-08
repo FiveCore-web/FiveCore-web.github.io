@@ -581,6 +581,17 @@
             <a href="FiveCore.apk" download class="auth-btn-primary" style="display: block; text-align: center; text-decoration: none; box-sizing: border-box;">Скачать FiveCore.apk</a>
         </div>
     </div>
+    <div class="modal-overlay hidden" id="app-update-modal-overlay" onclick="this.classList.add('hidden'); document.getElementById('bottom-nav').classList.remove('nav-hidden');" style="touch-action: none;">
+        <div class="report-modal" onclick="event.stopPropagation()" style="text-align: left; width: 85%; max-width: 360px;">
+            <div class="report-modal-title" style="text-align: center; font-family: 'Nunito', sans-serif;">FiveCore стал ещё лучше!</div>
+            <div class="report-modal-text" style="font-family: 'Nunito', sans-serif;">
+                Обычно FiveCore обновляется самостоятельно, но иногда без вашей помощи не обойтись!<br><br>
+                Скачайте новый файл и обновите приложение.<br><br>
+                Важно: без этого обновления FiveCore может работать с ошибками. Лучше его не откладывать :)
+            </div>
+            <a href="FiveCore.apk" download class="auth-btn-primary" style="display: block; text-align: center; text-decoration: none; box-sizing: border-box;">Скачать FiveCore.apk</a>
+        </div>
+    </div>
     <div class="modal-overlay hidden" id="report-modal-overlay" onclick="closeReportModal()">
     <div class="report-modal" onclick="event.stopPropagation()">
         <div class="report-modal-title">Сообщение об ошибке</div>
