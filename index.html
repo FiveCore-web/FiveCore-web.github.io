@@ -106,18 +106,20 @@
     }
 
 if (window.AndroidNative && typeof window.AndroidNative.getAppVersion === 'function') {
+        // сразу прячем — мы точно внутри приложения, по умолчанию кнопка не нужна
+        document.getElementById('app-download-btn-group').style.display = 'none';
+
         const currentVersion = window.AndroidNative.getAppVersion();
         fetch('https://fivecore-web.github.io/app-version.json')
             .then(res => res.json())
             .then(data => {
-                // устарела — оставляем кнопку видимой (пока так же "Приложение", как на сайте)
-                if (isVersionOutdated(currentVersion, data.latestVersion)) return;
-                // версия свежая — прячем
-                document.getElementById('app-download-btn-group').style.display = 'none';
+                // версия устарела — только тогда показываем кнопку обратно
+                if (isVersionOutdated(currentVersion, data.latestVersion)) {
+                    document.getElementById('app-download-btn-group').style.display = '';
+                }
             })
             .catch(() => {
-                // не удалось проверить — на всякий случай прячем, как раньше делали всегда
-                document.getElementById('app-download-btn-group').style.display = 'none';
+                // не удалось проверить — оставляем спрятанной (раз не знаем наверняка)
             });
     }
     // на сайте (window.AndroidNative не существует) — ничего не делаем,
