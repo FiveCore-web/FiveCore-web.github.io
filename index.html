@@ -100,8 +100,12 @@
         fetch('https://fivecore-web.github.io/app-version.json')
             .then(res => res.json())
             .then(data => {
-                // версии не совпали строка в строку — показываем кнопку обратно
+                // версии не совпали строка в строку — показываем кнопку обратно,
+                // но теперь это "Обновление", открывающее другое окно
                 if (String(data.latestVersion) !== currentVersion) {
+                    const btn = document.getElementById('app-download-btn');
+                    btn.textContent = 'Обновление';
+                    btn.setAttribute('onclick', "document.getElementById('app-update-modal-overlay').classList.remove('hidden'); document.getElementById('bottom-nav').classList.add('nav-hidden');");
                     document.getElementById('app-download-btn-group').style.display = '';
                 }
             })
