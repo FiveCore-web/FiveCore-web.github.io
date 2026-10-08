@@ -89,7 +89,7 @@
 
 <!-- Кнопка входа + флажок (плавающая, поверх интерфейса) -->
 <div id="app-download-btn-group" style="position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; z-index: 100; display: flex; align-items: stretch; background: white; border: 2px solid #e5e5e5; border-radius: 20px; overflow: hidden;">
-    <button type="button" onclick="document.getElementById('app-promo-modal-overlay').classList.remove('hidden'); document.getElementById('bottom-nav').classList.add('nav-hidden');" style="background: white; border: none; padding: 8px 16px; font-weight: 700; cursor: pointer; font-family: 'Nunito', sans-serif; color: #afafaf;">Приложение</button>
+    <button type="button" id="app-download-btn" onclick="document.getElementById('app-promo-modal-overlay').classList.remove('hidden'); document.getElementById('bottom-nav').classList.add('nav-hidden');" style="background: white; border: none; padding: 8px 16px; font-weight: 700; cursor: pointer; font-family: 'Nunito', sans-serif; color: #afafaf;">Приложение</button>
 </div>
 <script>
     if (window.AndroidNative && typeof window.AndroidNative.getAppVersion === 'function') {
