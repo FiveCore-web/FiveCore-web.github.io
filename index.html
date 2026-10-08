@@ -92,9 +92,34 @@
     <button type="button" onclick="document.getElementById('app-promo-modal-overlay').classList.remove('hidden'); document.getElementById('bottom-nav').classList.add('nav-hidden');" style="background: white; border: none; padding: 8px 16px; font-weight: 700; cursor: pointer; font-family: 'Nunito', sans-serif; color: #afafaf;">Приложение</button>
 </div>
 <script>
-    // В приложении (APK) эту кнопку вообще не показываем — она только для сайта.
-    // Инлайн-скрипт сразу после элемента — выполняется мгновенно, не ждёт script.js
-    if (window.AndroidNative) {
+    // Сравнивает версии вида "1.0.0" по частям (не просто как текст, чтобы "1.10.0"
+    // не считалось "меньше" чем "1.9.0" при сравнении строк)
+    function isVersionOutdated(current, latest) {
+        const a = String(current).split('.').map(Number);
+        const b = String(latest).split('.').map(Number);
+        for (let i = 0; i < Math.max(a.length, b.length); i++) {
+            const x = a[i] || 0, y = b[i] || 0;
+            if (x < y) return true;
+            if (x > y) return false;
+        }
+        return false;
+    }
+
+    if (window.AndroidNative && typeof window.AndroidNative.getAppVersion === 'function') {
+        const currentVersion = window.AndroidNative.getAppVersion();
+        fetch('https://fivecore-web.github.io/app-version.json')
+            .then(res => res.json())
+            .then(data => {
+                // устарела — оставляем кнопку видимой (пока так же "Приложение", как на сайте)
+                if (isVersionOutdated(currentVersion, data.latestVersion)) return;
+                // версия свежая — прячем, как раньше
+                document.getElementById('app-download-btn-group').style.display = 'none';
+            })
+            .catch(() => {
+                // не удалось проверить — на всякий случай прячем, как раньше делали всегда
+                document.getElementById('app-download-btn-group').style.display = 'none';
+            });
+    } else {
         document.getElementById('app-download-btn-group').style.display = 'none';
     }
 </script>
