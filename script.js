@@ -3518,10 +3518,26 @@ try {
     const { res, data } = result;
 
     if (!res.ok) {
-        authError.textContent = data.error || "Ошибка входа";
-        authError.style.display = "block";
+    if (data.error === 'locked') {
+        startLoginLock(data.lockType, data.lockSecondsRemaining, data.requireTurnstile);
         return;
     }
+    if (data.requireTurnstile) {
+        loginRequireTurnstile = true;
+        document.getElementById('auth-login-turnstile-group').classList.remove('hidden');
+        if (window.loginTurnstileWidgetId !== undefined && typeof turnstile !== "undefined") {
+            turnstile.reset(window.loginTurnstileWidgetId);
+        } else {
+            tryRenderLoginTurnstile(20);
+        }
+    }
+    authError.textContent = data.error || "Ошибка входа";
+    authError.style.display = "block";
+    return;
+}
+loginRequireTurnstile = false;
+loginLockUntil = 0;
+document.getElementById('auth-login-turnstile-group').classList.add('hidden');
 
     await signInWithCustomToken(auth, data.token);
     localStorage.setItem("platformLogin", email);
