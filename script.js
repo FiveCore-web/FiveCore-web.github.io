@@ -3468,7 +3468,17 @@ if (isRegisterMode && !document.getElementById('auth-consent-checkbox').checked)
     }
 let turnstileToken = "";
 if (isRegisterMode) {
-    turnstileToken = (typeof turnstile !== "undefined" && window.turnstileWidgetId !== undefined) ? turnstile.getResponse(window.turnstileWidgetId) : "";
+    turnstileToken = (typeof turnstile !== "undefined") ? turnstile.getResponse() : "";
+    if (!turnstileToken) {
+        authError.textContent = "Подтвердите, что вы не робот";
+        authError.style.display = "block";
+        authSubmitBtn.classList.remove("loading");
+        authSubmitBtn.disabled = false;
+        return;
+    }
+} else if (loginRequireTurnstile) {
+    turnstileToken = (typeof turnstile !== "undefined" && window.loginTurnstileWidgetId !== undefined)
+        ? turnstile.getResponse(window.loginTurnstileWidgetId) : "";
     if (!turnstileToken) {
         authError.textContent = "Подтвердите, что вы не робот";
         authError.style.display = "block";
