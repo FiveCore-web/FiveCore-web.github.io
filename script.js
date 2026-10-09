@@ -3442,6 +3442,9 @@ if (isRegisterMode) {
 
   // Отправка формы
   authSubmitBtn.addEventListener("click", async () => {
+      if (!isRegisterMode && Date.now() < loginLockUntil) {
+    return;
+      }
     authSubmitBtn.classList.add("loading");
 authSubmitBtn.disabled = true;
     const email = authEmail.value.trim();
