@@ -3376,6 +3376,54 @@ function tryRenderTurnstile(attemptsLeft) {
         setTimeout(() => tryRenderTurnstile(attemptsLeft - 1), 300);
     }
 }
+    function tryRenderLoginTurnstile(attemptsLeft) {
+    if (window.loginTurnstileWidgetId !== undefined) return;
+    if (typeof turnstile !== "undefined") {
+        window.loginTurnstileWidgetId = turnstile.render('#login-turnstile-widget-container', {
+            sitekey: '0x4AAAAAAE6lU4gh3B9UfXaL',
+            action: 'login'
+        });
+        return;
+    }
+    if (attemptsLeft > 0) {
+        setTimeout(() => tryRenderLoginTurnstile(attemptsLeft - 1), 300);
+    }
+}
+
+let loginLockUntil = 0;
+let loginLockInterval = null;
+let loginRequireTurnstile = false;
+
+function startLoginLock(lockType, lockSeconds, requireTurnstile) {
+    loginLockUntil = Date.now() + lockSeconds * 1000;
+    loginRequireTurnstile = requireTurnstile;
+    authSubmitBtn.disabled = true;
+
+    if (requireTurnstile) {
+        document.getElementById('auth-login-turnstile-group').classList.remove('hidden');
+        tryRenderLoginTurnstile(20);
+    }
+
+    if (loginLockInterval) clearInterval(loginLockInterval);
+
+    function tick() {
+        const secondsLeft = Math.ceil((loginLockUntil - Date.now()) / 1000);
+        if (secondsLeft <= 0) {
+            clearInterval(loginLockInterval);
+            loginLockInterval = null;
+            authError.style.display = "none";
+            authSubmitBtn.disabled = false;
+            return;
+        }
+        authError.textContent = lockType === 'long'
+            ? "Слишком много неверных попыток. Вы можете попробовать ещё раз через час."
+            : "Подождите... " + secondsLeft;
+        authError.style.display = "block";
+    }
+
+    tick();
+    loginLockInterval = setInterval(tick, 1000);
+}
 
   // Переключение между "Вход" и "Регистрация"
   authToggle.addEventListener("click", () => {
