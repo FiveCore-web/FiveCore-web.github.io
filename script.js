@@ -3398,6 +3398,7 @@ function startLoginLock(lockType, lockSeconds, requireTurnstile) {
     loginLockUntil = Date.now() + lockSeconds * 1000;
     loginRequireTurnstile = requireTurnstile;
     authSubmitBtn.disabled = true;
+authSubmitBtn.style.opacity = "0.5";
 
     if (requireTurnstile) {
         document.getElementById('auth-login-turnstile-group').classList.remove('hidden');
