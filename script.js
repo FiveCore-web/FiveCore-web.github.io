@@ -3437,6 +3437,13 @@ authSubmitBtn.style.opacity = "0.5";
     authError.style.display = "none";
     document.getElementById('auth-consent-group').classList.toggle('hidden', !isRegisterMode);
     document.getElementById('auth-consent-checkbox').checked = false;
+      if (!isRegisterMode && Date.now() < loginLockUntil) {
+    authSubmitBtn.disabled = true;
+    authSubmitBtn.style.opacity = "0.5";
+} else {
+    authSubmitBtn.disabled = false;
+    authSubmitBtn.style.opacity = "1";
+      }
     document.getElementById('auth-login-turnstile-group').classList.add('hidden');
     document.getElementById('auth-turnstile-group').classList.toggle('hidden', !isRegisterMode);
 if (isRegisterMode) {
