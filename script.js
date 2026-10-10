@@ -3406,20 +3406,22 @@ function startLoginLock(lockType, lockSeconds, requireTurnstile) {
 
     if (loginLockInterval) clearInterval(loginLockInterval);
 
-    function tick() {
+        function tick() {
         const secondsLeft = Math.ceil((loginLockUntil - Date.now()) / 1000);
         if (secondsLeft <= 0) {
             clearInterval(loginLockInterval);
             loginLockInterval = null;
-            authError.style.display = "none";
             authSubmitBtn.disabled = false;
+            authSubmitBtn.style.opacity = "1";
+            if (!isRegisterMode) authError.style.display = "none";
             return;
         }
+        if (isRegisterMode) return;
         authError.textContent = lockType === 'long'
             ? "Слишком много неверных попыток. Вы можете попробовать ещё раз через час."
             : "Подождите... " + secondsLeft;
         authError.style.display = "block";
-    }
+        }
 
     tick();
     loginLockInterval = setInterval(tick, 1000);
