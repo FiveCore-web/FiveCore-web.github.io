@@ -3434,7 +3434,8 @@ function startLoginLock(lockType, lockSeconds, requireTurnstile) {
     authError.style.display = "none";
     document.getElementById('auth-consent-group').classList.toggle('hidden', !isRegisterMode);
     document.getElementById('auth-consent-checkbox').checked = false;
-document.getElementById('auth-turnstile-group').classList.toggle('hidden', !isRegisterMode);
+    document.getElementById('auth-login-turnstile-group').classList.add('hidden');
+    document.getElementById('auth-turnstile-group').classList.toggle('hidden', !isRegisterMode);
 if (isRegisterMode) {
     tryRenderTurnstile(20);
 }
