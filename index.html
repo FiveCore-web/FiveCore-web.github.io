@@ -308,7 +308,11 @@
                 </div>
                 <div id="cs-body" class="cs-body"></div>
             </div>
-            <button id="cheat-sheet-btn" class="cheat-sheet-btn" onclick="toggleCheatSheet()">📄</button>
+            <button id="cheat-sheet-btn" class="cheat-sheet-btn" onclick="toggleCheatSheet()">
+<svg width="22" height="20" viewBox="0 0 24 24" fill="none" stroke="#B9B9B9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(35deg)">
+<path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>
+</svg>
+</button>
         </div>
 
         <header class="lesson-header">
@@ -346,7 +350,7 @@
     <div class="example-bubble" id="l-example-bubble"></div>
 </div>
             <div class="bounce-in delay-2" id="l-draft-container">
-    <label class="input-label">Черновик</label>
+    <label class="input-label"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -5px; margin-right: 4px;"><g stroke="#D0DFE5"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/></g><path stroke="#FFC53F" d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg> Черновик</label>
     <div class="draft-input-wrap" id="l-draft-input-group">
     <math-field class="lesson-input" id="l-draft" math-virtual-keyboard-policy="manual"></math-field>
     <canvas id="l-draft-canvas" class="draft-canvas hidden"></canvas>
@@ -401,17 +405,17 @@
     </div>
             </div>
             <div class="bounce-in delay-3" id="l-answer-container">
-                <label class="input-label">Твой ответ</label>
+                <label class="input-label"><span style="display:inline-block; width:22px; height:22px; background-color:#F1302B; vertical-align:-5px; margin-right:4px; -webkit-mask-image:url('https://cdn.jsdelivr.net/npm/@tabler/icons@3.34.0/icons/outline/target-arrow.svg'); mask-image:url('https://cdn.jsdelivr.net/npm/@tabler/icons@3.34.0/icons/outline/target-arrow.svg'); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-size:contain; mask-size:contain;"></span> Твой ответ</label>
                 <div class="input-group">
                     <math-field class="lesson-input" id="l-answer" math-virtual-keyboard-policy="manual"></math-field>
                 </div>
             </div>
             <div class="bounce-in delay-3" id="l-options-container">
-                <label class="input-label">Твой ответ</label>
+                <label class="input-label"><span style="display:inline-block; width:22px; height:22px; background-color:#F1302B; vertical-align:-5px; margin-right:4px; -webkit-mask-image:url('https://cdn.jsdelivr.net/npm/@tabler/icons@3.34.0/icons/outline/target-arrow.svg'); mask-image:url('https://cdn.jsdelivr.net/npm/@tabler/icons@3.34.0/icons/outline/target-arrow.svg'); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-size:contain; mask-size:contain;"></span> Твой ответ</label>
                 <div class="options-grid" id="l-options-grid"></div>
             </div>
             <div class="bounce-in delay-3" id="l-details-container">
-                <label class="input-label">Собери ответ</label>
+                <label class="input-label"><span style="display:inline-block; width:22px; height:22px; background-color:#e53935; vertical-align:-5px; margin-right:4px; -webkit-mask-image:url('https://cdn.jsdelivr.net/npm/@tabler/icons@3.34.0/icons/outline/target-arrow.svg'); mask-image:url('https://cdn.jsdelivr.net/npm/@tabler/icons@3.34.0/icons/outline/target-arrow.svg'); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-size:contain; mask-size:contain;"></span> Собери ответ</label>
                 <div class="details-answer-area" id="l-details-answer"></div>
                 <div class="details-bank" id="l-details-bank"></div>
             </div>
