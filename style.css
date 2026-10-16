@@ -2319,3 +2319,30 @@ body.draft-fullscreen-open {
     z-index: 4;
     background: transparent;
 }
+
+/* Внешняя панель не прокручивается */
+.lesson-footer.explanation-mode,
+.lesson-footer.explanation-closing {
+    overflow: hidden;
+}
+
+/* Прокручивается только содержимое объяснения */
+.explanation-mode .feedback-area {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+}
+
+.explanation-mode .feedback-area::-webkit-scrollbar {
+    display: none;
+}
+
+.explanation-closing .feedback-area {
+    min-height: 0;
+    scrollbar-width: none;
+}
+
+.explanation-closing .feedback-area::-webkit-scrollbar {
+    display: none;
+}
