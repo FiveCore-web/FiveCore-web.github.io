@@ -2704,7 +2704,7 @@ function copyLessonCode() {
                 feedbackTitle.style.opacity = '';
                 feedbackTitle.style.animation = '';
                 feedbackTitle.style.transform = '';
-                feedbackTitle.innerHTML = '💡 Объяснение';
+                feedbackTitle.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" width="30" style="vertical-align: -6px; margin-right: 6px;"><path fill="#ffc22f" d="M83 168Q76 168 79 183L89 218Q93 235 112 235H128Q147 235 151 218L161 183Q164 168 157 168Z"/><circle cx="120" cy="100" r="88" fill="#ffde25"/><path fill="#FFF0B8" d="M49 55Q61 33 85 30Q100 28 94 44L61 75Q42 85 49 55Z"/><circle cx="49" cy="88" r="6" fill="#FFF0B8"/><path d="M91 111H149Q155 111 151 118L137 140Q132 150 132 163M108 163Q108 150 103 140L89 118Q85 111 91 111" fill="none" stroke="#fff8df" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg> Объяснение';
                 
                 const task = currentLesson.tasks[currentTaskIndex];
                 const expContainer = document.getElementById('l-feedback-explanation');
