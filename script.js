@@ -2819,16 +2819,13 @@ btnCloseExplain.addEventListener('animationend', () => {
                     btnCloseExplain.classList.remove('btn-animated');
                 }, { once: true });
                 
-                                                // Запускаем анимацию высоты до полной видимой области и плавно показываем новый контент.
-                // Берём window.innerHeight в px (а не vh/dvh) — это зафиксированное число
-                // на момент открытия, которое не "поедет" дальше, если адресная строка
-                // браузера потом сама спрячется и видимая область увеличится
-                footer.style.height = window.innerHeight + 'px';
+                // Запускаем анимацию высоты до 100vh и плавно показываем новый контент
+                footer.style.height = '100vh';
                 footerContent.style.opacity = '1';
                 
                 // После завершения анимации убираем жестко заданную высоту
                 setTimeout(() => {
-                    footer.style.height = '100dvh';
+                    footer.style.height = '';
                     footerContent.style.transition = '';
                 }, 400);
             }, 150);
