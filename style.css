@@ -634,13 +634,85 @@ math-field::part(virtual-keyboard-toggle) { display: none !important; }
         .state-error .btn-explain:hover { box-shadow: 0 7px 0 #e5e5e5; }
 
         /* Режим объяснения */
-        .lesson-footer.explanation-mode { height: 100vh; max-height: 100vh; background-color: #e1f5fe !important; border-top-color: transparent; display: flex; flex-direction: column; transition: background-color 0.1s ease, height 0.4s ease; }
-        .explanation-mode .footer-content { flex-direction: column; align-items: flex-start; height: 100%; justify-content: flex-start; padding-top: 20px; }
-        .explanation-mode .feedback-area { display: flex; flex-direction: column; width: 100%; flex: 1; animation: none; overflow-y: auto; padding-right: 10px; padding-bottom: 10px; }
-        .explanation-mode .feedback-title { font-size: 32px; color: #0288d1; margin-bottom: 15px; animation: slideUpFade 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; flex-shrink: 0; }
-        .explanation-mode .feedback-explanation { display: flex; flex-direction: column; gap: 15px; width: 100%; margin-top: 10px; flex-shrink: 0; }
-        .explanation-field { background: white; padding: 20px; border-radius: 16px; font-size: 18px; font-weight: 700; color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: slideUpFade 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; transform: translateY(100px); }
-        .explanation-mode .footer-buttons { width: 100%; justify-content: flex-start; padding-bottom: 20px; animation: none; margin-top: 0; flex: 0 0 auto; align-items: flex-start; }
+.lesson-footer.explanation-mode {
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+
+    box-sizing: border-box;
+    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+
+    background-color: #e1f5fe !important;
+    border-top-color: transparent;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+}
+
+.explanation-mode .footer-content {
+    flex-direction: column;
+    align-items: flex-start;
+
+    height: auto;
+    min-height: 0;
+    flex: 1;
+
+    justify-content: flex-start;
+    padding-top: 0;
+    padding-bottom: 0;
+
+    overflow: hidden;
+}
+
+.explanation-mode .feedback-area {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+
+    animation: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    padding-right: 10px;
+    padding-bottom: 10px;
+}
+
+.explanation-mode .feedback-title {
+    font-size: 32px;
+    color: #0288d1;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+
+.explanation-mode .feedback-explanation {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+
+    width: 100%;
+    margin-top: 10px;
+
+    flex-shrink: 0;
+}
+
+.explanation-mode .footer-buttons {
+    width: 100%;
+    justify-content: flex-start;
+
+    padding-bottom: 0;
+    animation: none;
+    margin-top: 0;
+
+    flex: 0 0 auto;
+    align-items: flex-start;
+}
         
         /* Класс для анимации закрытия объяснения */
         .lesson-footer.explanation-closing { border-top-color: transparent; display: flex; flex-direction: column; overflow: hidden; background-color: #e1f5fe !important; }
