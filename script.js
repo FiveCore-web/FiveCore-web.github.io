@@ -2828,7 +2828,7 @@ btnCloseExplain.addEventListener('animationend', () => {
                 
                 // После завершения анимации убираем жестко заданную высоту
                 setTimeout(() => {
-                    footer.style.height = '';
+                    footer.style.height = '100dvh';
                     footerContent.style.transition = '';
                 }, 400);
             }, 150);
