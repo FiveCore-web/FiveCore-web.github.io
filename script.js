@@ -2819,8 +2819,8 @@ btnCloseExplain.addEventListener('animationend', () => {
                     btnCloseExplain.classList.remove('btn-animated');
                 }, { once: true });
                 
-                // Запускаем анимацию высоты до 100vh и плавно показываем новый контент
-                footer.style.height = '100vh';
+                                // Запускаем анимацию высоты до полной видимой области и плавно показываем новый контент
+                footer.style.height = '100dvh';
                 footerContent.style.opacity = '1';
                 
                 // После завершения анимации убираем жестко заданную высоту
