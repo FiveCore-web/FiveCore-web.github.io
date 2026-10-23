@@ -178,7 +178,7 @@ function setTokenNumber(token, num) {
 function mutateShiftAll(tokens, decimalMode) {
     const clone = cloneTokens(tokens);
     const firstNumber = clone.find(t => t.type === 'number');
-    const delta = randomDeltaForToken(firstNumber, decimalMode);
+        const delta = randomDeltaForToken(firstNumber, decimalMode, commonRoundnessStep(clone));
     clone.forEach(t => { if (t.type === 'number') setTokenNumber(t, t.num + delta); });
     return clone;
 }
@@ -228,13 +228,38 @@ function mutateShiftRoot(tokens, rootIndices, decimalMode) {
 // Дельта для сдвига: обычно небольшое целое число (1-3). Но если весь урок состоит
 // из десятичных дробей (decimalMode) — сдвигаем на уровне последнего разряда самой
 // дроби (0,2 -> 0,3 / 0,1, а не 0,2 -> 1,2), чтобы дистрактор остался похожей дробью.
-function randomDeltaForToken(token, decimalMode) {
+function randomDeltaForToken(token, decimalMode, forcedStep) {
     const magnitude = 1 + Math.floor(Math.random() * 3);
-    const sign = Math.random() < 0.5 ? 1 : -1;
+    let sign = Math.random() < 0.5 ? 1 : -1;
     if (decimalMode && token && token.decimals > 0) {
         return sign * magnitude * Math.pow(10, -token.decimals);
     }
-    return sign * magnitude;
+    // Для "круглых" чисел (кратных 100 или 1000) шаг не 1, а 100 или 1000
+    const step = forcedStep || (token && !(token.decimals > 0) ? roundnessStep(token.num) : 1);
+    if (step > 1 && token) {
+        // не даём "круглому" дистрактору уйти в ноль или сменить знак числа
+        const candidate = token.num + sign * magnitude * step;
+        if (candidate === 0 || (candidate > 0) !== (token.num > 0)) sign = -sign;
+    }
+    return sign * magnitude * step;
+}
+
+// Насколько число "круглое": кратно 1000 -> шаг 1000, кратно 100 -> шаг 100, иначе 1.
+// Так у ответа 5100 дистракторы будут 5200, 4900, 5400..., а у 7000 — 8000, 5000, 10000...
+function roundnessStep(num) {
+    if (!Number.isInteger(num)) return 1;
+    const abs = Math.abs(num);
+    if (abs >= 1000 && abs % 1000 === 0) return 1000;
+    if (abs >= 100 && abs % 100 === 0) return 100;
+    return 1;
+}
+
+// Общий шаг для всех чисел ответа (для синхронного сдвига): берём самый "мелкий",
+// чтобы, например, у "400 и 500" шаг был 100, а у "5 и 400" — обычный 1
+function commonRoundnessStep(tokens) {
+    const nums = tokens.filter(t => t.type === 'number');
+    if (nums.length === 0 || nums.some(t => t.decimals > 0)) return 1;
+    return Math.min(...nums.map(t => roundnessStep(t.num)));
 }
 
 
@@ -530,8 +555,9 @@ function buildDetailsFields(correctAnswer, decimalMode) {
             let attempts = 0;
             while (added < 2 && attempts < 20 && pieces.length < MAX_DETAILS) {
                 attempts++;
-                const magnitude = 1 + Math.floor(Math.random() * 3);
-                let decoyNum = token.num + (Math.random() < 0.5 ? magnitude : -magnitude);
+                                const magnitude = 1 + Math.floor(Math.random() * 3);
+                const roundStep = token.padLength ? 1 : roundnessStep(token.num); // у дробной части шаг всегда 1
+                let decoyNum = token.num + (Math.random() < 0.5 ? magnitude : -magnitude) * roundStep;
                 if (decoyNum < 0) decoyNum = Math.abs(decoyNum);
                 let decoyText = String(decoyNum);
                 if (token.padLength) decoyText = decoyText.padStart(token.padLength, '0').slice(-token.padLength);
