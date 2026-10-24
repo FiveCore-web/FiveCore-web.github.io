@@ -209,6 +209,44 @@ function onFirebaseReady(callback) {
             return { cols, rows, data };
         }
 
+        // Таблица для урока и теории. В JSON ключ должен начинаться с "table" (table, table1, tableA...).
+        // Значение может быть тремя способами:
+        //   1) строка в формате шпаргалок: "столбов: 2, строк: 2. столб 1, строка 1: ..."
+        //   2) массив строк:  [["x", "1", "2"], ["y", "3", "4"]]
+        //   3) объект с заголовком:  { "header": ["x", "y"], "rows": [["1", "3"], ["2", "4"]] }
+        function createLessonTable(value) {
+            let header = null, rows = [];
+            if (typeof value === 'string') {
+                rows = parseCustomTable(value).data;
+            } else if (Array.isArray(value)) {
+                rows = value;
+            } else if (value && typeof value === 'object') {
+                header = Array.isArray(value.header) ? value.header : null;
+                rows = Array.isArray(value.rows) ? value.rows : [];
+            }
+            if (!header && rows.length === 0) return null;
+
+            const makeRow = (cells, tag) => {
+                const tr = document.createElement('tr');
+                (Array.isArray(cells) ? cells : [cells]).forEach(cell => {
+                    const el = document.createElement(tag);
+                    el.innerHTML = autoWrapMath(cell == null ? '' : String(cell));
+                    tr.appendChild(el);
+                });
+                return tr;
+            };
+
+            const table = document.createElement('table');
+            table.className = 'cs-table task-table';
+            if (header) table.appendChild(makeRow(header, 'th'));
+            rows.forEach(r => table.appendChild(makeRow(r, 'td')));
+
+            const wrap = document.createElement('div');
+            wrap.className = 'task-table-wrap';
+            wrap.appendChild(table);
+            return wrap;
+        }
+
         function toggleCheatSheet() {
             const wrapper = document.getElementById('cheat-sheet-wrapper');
             if (wrapper.classList.contains('active')) {
@@ -1770,6 +1808,9 @@ answerChip.classList.add('removing');
             div.innerHTML = codeText.replace(/\n/g, '<br>');
             bubble.appendChild(div);
         }
+        } else if (key.toLowerCase().startsWith('table')) {
+        const tableEl = createLessonTable(task[key]);
+        if (tableEl) bubble.appendChild(tableEl);
     } else if (key.toLowerCase().startsWith('graph') && !claimedGraphKeys.has(key)) {
     const graphCommands = task[key];
     if (Array.isArray(graphCommands) && graphCommands.length > 0) {
@@ -2002,6 +2043,12 @@ if (!currentLesson || !showTheoryBtn || !theory) return;
                         div.innerHTML = codeText.replace(/\n/g, '<br>');
                         bubble.appendChild(div);
                     }
+                                } else if (key.toLowerCase().startsWith('table')) {
+                    const tableEl = createLessonTable(theory[key]);
+                    if (tableEl) bubble.appendChild(tableEl);
+                                } else if (key.toLowerCase().startsWith('table')) {
+                    const tableEl = createLessonTable(theory[key]);
+                    if (tableEl) bubble.appendChild(tableEl);
                 } else if (key.toLowerCase().startsWith('graph')) {
                     const graphCommands = theory[key];
                     if (Array.isArray(graphCommands) && graphCommands.length > 0) {
@@ -4138,4 +4185,4 @@ function createGraphBox(graphCommands) {
 
     graphWrapper.appendChild(iframe);
     return graphWrapper;
-                }
+                        }
