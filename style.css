@@ -2346,3 +2346,8 @@ body.draft-fullscreen-open {
 .explanation-closing .feedback-area::-webkit-scrollbar {
     display: none;
 }
+
+/* Таблицы внутри урока и теории (стиль берётся от .cs-table, как в шпаргалках) */
+.task-table-wrap { overflow-x: auto; margin: 12px 0; padding: 2px; -webkit-overflow-scrolling: touch; }
+.task-table-wrap .cs-table { margin-bottom: 0; }
+.task-table td { font-weight: 400; }
