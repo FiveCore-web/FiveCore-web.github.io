@@ -2584,7 +2584,17 @@ function copyLessonCode() {
             const footer = document.getElementById('l-footer');
             const answer = document.getElementById('l-details-answer');
             const bank = document.getElementById('l-details-bank');
-            const isSuccess = (detailsSequence.join('') === String(task.correctAnswer).trim());
+                        const correctStr = String(task.correctAnswer).trim();
+            let isSuccess = (detailsSequence.join('') === correctStr);
+            if (!isSuccess) {
+                // Одинаковые по тексту детали (например две "5" в ответе "5,5") взаимозаменяемы:
+                // сравниваем то, что написано на деталях, а не их номера
+                const expectedTexts = correctStr.split('').map(d => task[d + ' detail']);
+                if (expectedTexts.every(t => typeof t === 'string')) {
+                    const actualText = detailsSequence.map(i => String(task[i + ' detail'])).join('');
+                    isSuccess = (actualText === expectedTexts.join(''));
+                }
+            }
 
             if (!isSuccess) {
                 lessonErrors++;
