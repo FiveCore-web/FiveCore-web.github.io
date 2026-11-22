@@ -38,8 +38,6 @@ function onFirebaseReady(callback) {
 "https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/1-5-zadania.json",
   
 "https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/1-5-sheets.json",
-
-"https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/1-5-plans.json"
 ],
 "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/6-zadanie.json",
   "https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/7-zadanie.json",
