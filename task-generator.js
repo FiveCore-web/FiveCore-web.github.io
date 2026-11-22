@@ -1,27 +1,6 @@
 /* ===================================================
    task-generator.js
 
-   Переделывает задания типа "input" в "options" или "details",
-   зная только правильный ответ (task.correctAnswer).
-   Ничего не знает про смысл ответа (интервал, дробь, пара чисел и т.п.) —
-   просто находит в строке числа и текстовые куски вокруг них,
-   и умеет их правдоподобно "портить" для дистракторов.
-
-   Подключается отдельным <script> после script.js.
-   Точка входа: autoGenerateLesson(tasks) — см. в самом низу файла.
-   =================================================== */
-
-
-/* ===================================================
-   СЛОЙ 2 — разбор ответа на токены (числа + текст между ними)
-   =================================================== */
-
-// Разбивает строку ответа на чередующиеся куски: текст, число, текст, число...
-// Число — это { type:'number', value:'14', num:14 }, текст — { type:'text', value:' и ' }.
-// Пустые текстовые куски (например, если ответ начинается сразу с числа) не отбрасываются
-// здесь намеренно — фильтрация происходит там, где куски раскладываются по деталям/тексту.
-// Символы, у которых есть "противоположная" версия — скобки и знаки неравенства.
-// Используются, чтобы делать дистракторы вида "(0,5; 0,6]" вместо честного "[0,5; 0,6]".
 const SWAP_MAP = { '[': '(', '(': '[', ']': ')', ')': ']', '<': '>', '>': '<' };
 
 // Режет текстовый кусок на отдельные токены: одиночные "переключаемые" символы
@@ -62,7 +41,46 @@ function formatRoot(num, format) {
 
 // Обычная (без корней) разбивка куска строки на числа/символы/текст —
 // прежнее содержимое tokenizeAnswer
+// ---- Защита формул от разрезания (только для деталей) ----
+// Степени и индексы вместе с основанием (x^2, x_1, (x+1)^2, 2^3, x^{10}) и команды с фигурными
+// скобками (\frac{1}{2}, \sqrt{x+1}) нельзя рвать на куски: деталь "x^" или "\frac{" MathJax
+// показывает красной ошибкой. Такие группы временно заменяются на метки и возвращаются обратно.
+function protectLatex(str) {
+    const store = [];
+    const put = m => { store.push(m); return '\uE000' + String.fromCharCode(0xE100 + store.length - 1) + '\uE001'; };
+    let out = str.replace(/\\[a-zA-Z]+(?:\{[^{}]*\})+/g, put);
+    out = out.replace(/(?:[A-Za-z]|\d+(?:[.,]\d+)?|[)\]])?[\^_](?:\{[^{}]*\}|-?\d+|[A-Za-z])/g, put);
+    return { text: out, store };
+}
+function restoreLatex(s, store) {
+    let prev;
+    do {
+        prev = s;
+        s = s.replace(/\uE000([\uE100-\uE1FF])\uE001/g, (m, ch) => store[ch.charCodeAt(0) - 0xE100]);
+    } while (s !== prev);
+    return s;
+}
+// Кусок формулы целый? (нет висящего ^ или _, оборванной команды, незакрытой скобки)
+function isSafeLatexPiece(text) {
+    const t = String(text);
+    if (/[\^_]\s*$/.test(t) || /\\\s*$/.test(t)) return false;
+    if (/<[A-Za-z\/!?]/.test(t)) return false;   // деталь вставляется через innerHTML: "<x" стало бы тегом и пропало
+    let depth = 0;
+    for (const ch of t) {
+        if (ch === '{') depth++;
+        else if (ch === '}') { depth--; if (depth < 0) return false; }
+    }
+    return depth === 0;
+}
+
+let LATEX_ATOMIC = false;   // включается только на время разбора для деталей
 function tokenizePlain(str) {
+    if (!LATEX_ATOMIC) return tokenizePlainRaw(str);
+    const p = protectLatex(str);
+    return tokenizePlainRaw(p.text).map(t => (t.type === 'text' ? Object.assign({}, t, { value: restoreLatex(t.value, p.store) }) : t));
+}
+
+function tokenizePlainRaw(str) {
     const re = /-?\d+(?:([.,])(\d+))?/g;
     const tokens = [];
     let lastIndex = 0;
@@ -92,7 +110,12 @@ function tokenizePlain(str) {
     return tokens;
 }
 
-function tokenizeAnswer(answer) {
+function tokenizeAnswer(answer, atomic) {
+    LATEX_ATOMIC = !!atomic;
+    try { return tokenizeAnswerRaw(answer); } finally { LATEX_ATOMIC = false; }
+}
+
+function tokenizeAnswerRaw(answer) {
     const str = String(answer);
     const tokens = [];
     let lastIndex = 0;
@@ -466,7 +489,7 @@ function compactTokensForDetails(tokens) {
         let merged = false;
 
         for (let i = 0; i < result.length; i++) {
-            if (result[i].type !== 'symbol') continue;
+            if (result[i].type !== 'symbol' || result[i].value === '<' || result[i].value === '>') continue;
             if (result[i + 1] && result[i + 1].type === 'text') {
                 result[i + 1] = { type: 'text', value: result[i].value + result[i + 1].value };
                 result.splice(i, 1);
@@ -495,7 +518,12 @@ function compactTokensForDetails(tokens) {
 }
 
 function getDetailsTokens(correctAnswer) {
-    const rootSplitTokens = splitRootTokensForDetails(tokenizeAnswer(correctAnswer));
+    // Пробелы по краям текстовых кусков убираем, а куски из одних пробелов выбрасываем: иначе в банке
+    // появляются «пустые» детали (например, пробел вокруг знака > в "x > 2"), которые ученик не видит
+    // и не нажимает, — и верно собранный на вид ответ считается неправильным
+    const trimmedTokens = tokenizeAnswer(correctAnswer, true)
+        .map(t => (t.type === 'text' ? Object.assign({}, t, { value: t.value.trim() }) : t));
+    const rootSplitTokens = splitRootTokensForDetails(trimmedTokens);
     const isAlone = rootSplitTokens.filter(meaningfulDetailsFilter).length === 1;
     let tokens = (isAlone ? expandNumbersForDetails(rootSplitTokens) : rootSplitTokens)
         .filter(meaningfulDetailsFilter);
@@ -611,6 +639,10 @@ function buildDetailsFields(correctAnswer, decimalMode) {
             added++;
         }
     }
+
+    // Подстраховка: если какой-то кусок оказался оборванной формулой, MathJax покажет красную
+    // ошибку вместо детали — тогда details для этого задания не делаем (останутся варианты/ввод)
+    if (pieces.some(p => !isSafeLatexPiece(p.text))) return null;
 
     // Перемешиваем весь банк деталей
     for (let i = pieces.length - 1; i > 0; i--) {
