@@ -34,11 +34,19 @@ function onFirebaseReady(callback) {
         // база уроков
         // ===================================================
         const TOPIC_URLS = [
-  "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/6-zadanie.json",
+[
+"https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/1-5-zadania.json",
+  
+"https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/1-5-sheets.json",
+
+"https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/1-5-plans.json"
+],
+"https://cdn.jsdelivr.net/gh/ignatt002/blait@main/6-zadanie.json",
   "https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/7-zadanie.json",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/8-zadanie.json",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/9-zadanie",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/10-zadanie",
+  "https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/12-zadanie.json",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/13-zadanie.json",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/14%20%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/15-zadanie.json",
@@ -65,6 +73,7 @@ function onFirebaseReady(callback) {
                 if (data.topic) {
                     let topicCopy = JSON.parse(JSON.stringify(data.topic));
                     topicCopy.baseId = data.topic.id;
+            topicCopy.sourceUrl = topicMainUrl(TOPIC_URLS[index]);
                     topicCopy.id = topicCopy.id + '-' + index;
                     COURSE_DATA.topics.push(topicCopy);
                 }
@@ -90,6 +99,7 @@ function onFirebaseReady(callback) {
                 }
             });
 
+            buildGraphRegistry(topicsData);
             preprocessCourseData();
             renderTopics();
             renderRepetitionTopics();
@@ -103,15 +113,55 @@ function onFirebaseReady(callback) {
             cheatSheetsConfig.length = 0;
         }
 
+        // Главная ссылка темы: для обычной темы — сама строка, для вложенной — первая в массиве
+        function topicMainUrl(entry) { return Array.isArray(entry) ? entry[0] : entry; }
+
+        async function fetchJsonUrl(url) {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+        }
+
+        // Вливает файлы-варианты в главную тему: их подтемы дописываются в конец подтем главной,
+        // их уроки добавляются к урокам. Название и цвет темы берутся только из главного файла.
+        function mergeExtraTopics(main, extras) {
+            if (!main.topic) main.topic = {};
+            if (!Array.isArray(main.topic.subtopics)) main.topic.subtopics = [];
+            if (!main.lessons) main.lessons = {};
+            extras.forEach(function (extra) {
+                if (!extra) return;
+                if (extra.topic && Array.isArray(extra.topic.subtopics)) {
+                    main.topic.subtopics = main.topic.subtopics.concat(extra.topic.subtopics);
+                }
+                if (extra.lessons) {
+                    Object.keys(extra.lessons).forEach(function (id) {
+                        if (id in main.lessons) console.warn('Урок «' + id + '» уже есть в теме и будет заменён.');
+                    });
+                    Object.assign(main.lessons, extra.lessons);
+                }
+                if (Array.isArray(extra.cheatSheets)) main.cheatSheets = (main.cheatSheets || []).concat(extra.cheatSheets);
+            });
+            return main;
+        }
+
+        // Скачивает одну запись списка тем: строку или массив «главная + варианты»
+        async function fetchTopicEntry(entry) {
+            if (!Array.isArray(entry)) return fetchJsonUrl(entry);
+            const main = await fetchJsonUrl(entry[0]);
+            const extras = await Promise.allSettled(entry.slice(1).map(fetchJsonUrl));
+            return mergeExtraTopics(main, extras.map(function (r, i) {
+                if (r.status === 'fulfilled') return r.value;
+                console.warn('Не загрузился файл варианта ' + entry[i + 1] + ':', r.reason);
+                return null;
+            }));
+        }
+
         // Скачивает свежие темы/шпаргалки с сети. При успехе — кладёт "сырые" данные
         // в localStorage на СЛЕДУЮЩИЙ запуск (текущую сессию это не трогает).
         // renderIfDone === true — также отрисовать результат сейчас (когда кеша не было
         // вообще и ждать пришлось по-честному, как раньше).
         async function fetchAndCacheCourseData(renderIfDone) {
-            const fetchPromises = TOPIC_URLS.map(url => fetch(url).then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                return res.json();
-            }));
+            const fetchPromises = TOPIC_URLS.map(entry => fetchTopicEntry(entry));
             const csPromises = CHEAT_SHEET_URLS.map(url => fetch(url).then(res => {
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 return res.json();
@@ -1278,7 +1328,9 @@ if (isSectionHeader(level)) {
             if (lesson.isRepetition) {
                 tasksCount = lesson.tasksToGather || 0;
             } else {
-                tasksCount = lesson.tasks ? lesson.tasks.length : 0;
+                tasksCount = lesson.tasks
+                    ? (typeof countOgeTasks === 'function' ? countOgeTasks(lesson.tasks) : lesson.tasks.length)
+                    : 0;
             }
             
             let taskWord = "заданий";
@@ -1421,11 +1473,21 @@ currentLessonFailedTasks = [];
                 currentLesson.tasks = autoGenerateLesson(currentLesson.tasks);
             }
 
+                        // Подставляем задания из генератора ОГЭ (oge-1-5-generator.js) вместо записей { "generator": "..." }.
+            // Идёт ПОСЛЕ autoGenerateLesson, поэтому эти задания остаются обычным вводом ответа.
+            if (typeof expandOgeGenerators === 'function' && Array.isArray(currentLesson.tasks)) {
+                if (!currentLesson.ogeSourceTasks && currentLesson.tasks.some(t => t && typeof t.generator === 'string')) {
+                    currentLesson.ogeSourceTasks = currentLesson.tasks;
+                }
+                if (currentLesson.ogeSourceTasks) {
+                    currentLesson.tasks = expandOgeGenerators(currentLesson.ogeSourceTasks, lessonId);
+                }
+            }
+
             currentTaskIndex = 0;
             loadTask();
 
             savedPathScrollPosition = window.scrollY || document.documentElement.scrollTop;
-
             const menuView = document.getElementById('menu-view');
             const lessonView = document.getElementById('lesson-view');
             const bottomNav = document.getElementById('bottom-nav');
@@ -1692,7 +1754,7 @@ answerChip.classList.add('removing');
             const pos = keys.indexOf(`${optionIndex} option`);
             if (pos === -1 || pos + 1 >= keys.length) return null;
             const nextKey = keys[pos + 1];
-            if (nextKey.toLowerCase().startsWith('graph') && Array.isArray(task[nextKey]) && task[nextKey].length > 0) {
+            if (nextKey.toLowerCase().startsWith('graph') && isGraphValue(task[nextKey])) {
                 return nextKey;
             }
             return null;
@@ -1812,7 +1874,7 @@ answerChip.classList.add('removing');
         if (tableEl) bubble.appendChild(tableEl);
     } else if (key.toLowerCase().startsWith('graph') && !claimedGraphKeys.has(key)) {
     const graphCommands = task[key];
-    if (Array.isArray(graphCommands) && graphCommands.length > 0) {
+    if (isGraphValue(graphCommands)) {
         bubble.appendChild(createGraphBox(graphCommands));
     }
 }}
@@ -2050,7 +2112,7 @@ if (!currentLesson || !showTheoryBtn || !theory) return;
                     if (tableEl) bubble.appendChild(tableEl);
                 } else if (key.toLowerCase().startsWith('graph')) {
                     const graphCommands = theory[key];
-                    if (Array.isArray(graphCommands) && graphCommands.length > 0) {
+                    if (isGraphValue(graphCommands)) {
                         bubble.appendChild(createGraphBox(graphCommands));
                     }
                 }
@@ -2107,7 +2169,7 @@ if (!currentLesson || !showTheoryBtn || !theory) return;
                     }
                 } else if (key.toLowerCase().startsWith('graph')) {
                     const graphCommands = theory[key];
-                    if (Array.isArray(graphCommands) && graphCommands.length > 0) {
+                    if (isGraphValue(graphCommands)) {
                         bubble.appendChild(createGraphBox(graphCommands));
                     }
                 }
@@ -2145,7 +2207,7 @@ if (!currentLesson || !showTheoryBtn || !theory) return;
             if (dropdown.classList.contains('hidden')) {
                 document.getElementById('ld-title').innerText = currentLesson.title;
                 document.getElementById('ld-progress').innerText = currentLesson.isGenerator ? `Задание ${currentTaskIndex + 1}` : `Задание ${currentTaskIndex + 1} из ${currentLesson.tasks.length}`;
-                document.getElementById('ld-code').innerText = currentLessonId;
+                document.getElementById('ld-code').innerText = currentLessonId + (typeof ogeSeedLabel === 'function' ? ogeSeedLabel(currentLesson) : '');
                 dropdown.classList.remove('hidden');
                 
                 if (currentAppState !== 'lesson_dropdown') {
@@ -2173,7 +2235,7 @@ if (!currentLesson || !showTheoryBtn || !theory) return;
 
         function showReportModal() {
             document.getElementById('lesson-dropdown').classList.add('hidden');
-            document.getElementById('report-lesson-code').innerText = currentLessonId;
+            document.getElementById('report-lesson-code').innerText = currentLessonId + (typeof ogeSeedLabel === 'function' ? ogeSeedLabel(currentLesson) : '');
             document.getElementById('report-modal-overlay').classList.remove('hidden');
             
             if (currentAppState !== 'report_modal') {
@@ -2583,17 +2645,7 @@ function copyLessonCode() {
             const footer = document.getElementById('l-footer');
             const answer = document.getElementById('l-details-answer');
             const bank = document.getElementById('l-details-bank');
-                        const correctStr = String(task.correctAnswer).trim();
-            let isSuccess = (detailsSequence.join('') === correctStr);
-            if (!isSuccess) {
-                // Одинаковые по тексту детали (например две "5" в ответе "5,5") взаимозаменяемы:
-                // сравниваем то, что написано на деталях, а не их номера
-                const expectedTexts = correctStr.split('').map(d => task[d + ' detail']);
-                if (expectedTexts.every(t => typeof t === 'string')) {
-                    const actualText = detailsSequence.map(i => String(task[i + ' detail'])).join('');
-                    isSuccess = (actualText === expectedTexts.join(''));
-                }
-            }
+            const isSuccess = (detailsSequence.join('') === String(task.correctAnswer).trim());
 
             if (!isSuccess) {
                 lessonErrors++;
@@ -4160,7 +4212,58 @@ function closeDailyQuestsModal() {
     }, 300);
           }
 
+// ===== Именованные графики =====
+// Описание графика с именем:   "graph parabola1": [ "команда", ... ]
+// Вставка графика по имени:    "graph": { "name": "parabola1" }
+
+// Это график (массив команд) или ссылка на график по имени?
+function isGraphValue(v) {
+    return (Array.isArray(v) && v.length > 0) ||
+        (!!v && typeof v === 'object' && !Array.isArray(v) && typeof v.name === 'string' && v.name.trim() !== '');
+}
+
+// Один раз просматривает все загруженные темы и собирает «имя → команды»
+function buildGraphRegistry(root) {
+    const reg = {};
+    const walk = function (node) {
+        if (Array.isArray(node)) { node.forEach(walk); return; }
+        if (!node || typeof node !== 'object') return;
+        Object.keys(node).forEach(function (key) {
+            const val = node[key];
+            const m = /^graph\s+(.+)$/i.exec(key);
+            if (m && Array.isArray(val) && val.length > 0) {
+                const name = m[1].trim();
+                // «graph 2», «graph 3» — это обычные графики, а не имена
+                if (name !== '' && !/^\d+$/.test(name)) {
+                    if (!reg[name]) reg[name] = val;
+                    else if (JSON.stringify(reg[name]) !== JSON.stringify(val)) {
+                        console.warn('Граф с именем «' + name + '» описан несколько раз по-разному. Используется первый.');
+                    }
+                }
+            }
+            walk(val);
+        });
+    };
+    walk(root);
+    window.GRAPH_REGISTRY = reg;
+}
+
+// Возвращает массив команд графика или null
+function resolveGraphCommands(value) {
+    if (Array.isArray(value)) return value.length > 0 ? value : null;
+    if (value && typeof value === 'object' && typeof value.name === 'string') {
+        const name = value.name.trim();
+        const found = (window.GRAPH_REGISTRY || {})[name];
+        if (found) return found;
+        console.error('Граф «' + name + '» не найден. Проверь, что где-то есть ключ "graph ' + name + '": [...]');
+    }
+    return null;
+}
+
 function createGraphBox(graphCommands) {
+    const resolvedCommands = resolveGraphCommands(graphCommands);
+    if (!resolvedCommands) return document.createElement('div');
+    graphCommands = resolvedCommands;
     const graphWrapper = document.createElement('div');
     graphWrapper.className = 'graph-box-wrapper';
     graphWrapper.style.width = '100%';
@@ -4194,4 +4297,142 @@ function createGraphBox(graphCommands) {
 
     graphWrapper.appendChild(iframe);
     return graphWrapper;
-                        }
+                                                            }
+
+/* ===== Листание заданий (только тема из 1-5-sheets.json) ===== */
+const lessonNav = { states: {}, max: 0 };
+
+function lessonNavEnabled() {
+    return !!(currentLesson && currentTopic && /1-5-sheets/.test(currentTopic.sourceUrl || ''));
+}
+
+function lessonNavSave(idx) {
+    const task = currentLesson && currentLesson.tasks[idx];
+    if (!task) return;
+    const cv = document.getElementById('l-draft-canvas');
+    let canvasData = null, drawMode = false;
+    if (cv) {
+        drawMode = !cv.classList.contains('hidden');
+        if (cv.width > 0 && cv.height > 0) {
+            try { canvasData = cv.toDataURL(); } catch (e) {}
+        }
+    }
+    lessonNav.states[idx] = {
+        answer: document.getElementById('l-answer').value,
+        draft: document.getElementById('l-draft').value,
+        opt: selectedOptionIndex,
+        opts: [...selectedOptionIndices],
+        details: [...detailsSequence],
+        canvasData, drawMode
+    };
+}
+
+function lessonNavRestore(idx) {
+    const s = lessonNav.states[idx];
+    const task = currentLesson.tasks[idx];
+    if (!s || !task) return;
+    document.getElementById('l-answer').value = s.answer;
+    document.getElementById('l-draft').value = s.draft;
+
+    if (getOptionsCount(task) > 0) {
+        if (isMultiSelect(task)) s.opts.forEach(i => selectOption(i, task));
+        else if (s.opt) selectOption(s.opt, task);
+    } else if (getDetailsCount(task) > 0) {
+        s.details.forEach(i => toggleDetail(i));
+    }
+
+    const cv = document.getElementById('l-draft-canvas');
+    if (cv) {
+        const isDraw = !cv.classList.contains('hidden');
+        if (s.drawMode !== isDraw && typeof toggleDraftDrawMode === 'function') toggleDraftDrawMode();
+        if (s.canvasData) {
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                if (!cv.width || !cv.height) return;
+                const img = new Image();
+                img.onload = () => {
+                    const ctx = cv.getContext('2d');
+                    ctx.save();
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.clearRect(0, 0, cv.width, cv.height);
+                    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+                    ctx.restore();
+                };
+                img.src = s.canvasData;
+            }));
+        }
+    }
+}
+
+function lessonNavUpdateUi() {
+    const fb = document.getElementById('footer-buttons');
+    const prev = document.getElementById('lesson-nav-prev');
+    const next = document.getElementById('lesson-nav-next');
+    const btnCheck = document.getElementById('btn-check');
+    const on = lessonNavEnabled();
+    fb.classList.toggle('nav-on', on);
+    if (!on) { btnCheck.style.opacity = ''; return; }
+
+    const idx = currentTaskIndex;
+    prev.disabled = idx === 0;
+    prev.style.opacity = prev.disabled ? '0.5' : '1';
+    next.disabled = idx >= lessonNav.max;
+    next.style.opacity = next.disabled ? '0.5' : '1';
+
+    // уже решённое задание: «Проверить» гаснет как в окне входа
+    btnCheck.style.opacity = idx < lessonNav.max ? '0.5' : '1';
+
+    // прогресс-бар не откатывается назад
+    const total = currentLesson.tasks.length;
+    if (total > 0) {
+        document.getElementById('l-progress-fill').style.width =
+            Math.min(100, (lessonNav.max / total) * 100) + '%';
+    }
+}
+
+function lessonNavGo(dir) {
+    if (!lessonNavEnabled()) return;
+    const target = currentTaskIndex + dir;
+    if (target < 0 || target > lessonNav.max) return;
+    if (typeof closeMathKeyboard === 'function') closeMathKeyboard();
+    lessonNavSave(currentTaskIndex);
+    currentTaskIndex = target;
+    loadTask();
+}
+
+// --- обёртки над существующими функциями ---
+const _lnLoadTask = loadTask;
+loadTask = function () {
+    _lnLoadTask.apply(this, arguments);
+    if (lessonNavEnabled()) {
+        lessonNav.max = Math.max(lessonNav.max, currentTaskIndex);
+        lessonNavRestore(currentTaskIndex);
+    }
+    lessonNavUpdateUi();
+};
+
+const _lnNextTask = nextTask;
+nextTask = function () {
+    if (lessonNavEnabled()) lessonNavSave(currentTaskIndex);
+    _lnNextTask.apply(this, arguments);
+};
+
+const _lnCheckAnswer = checkAnswer;
+checkAnswer = function () {
+    // уже решённое задание — повторно не проверяем
+    if (lessonNavEnabled() && currentTaskIndex < lessonNav.max) return;
+    _lnCheckAnswer.apply(this, arguments);
+};
+
+const _lnStartLesson = startLesson;
+startLesson = function () {
+    lessonNav.states = {};
+    lessonNav.max = 0;
+    return _lnStartLesson.apply(this, arguments);
+};
+
+const _lnCloseLesson = actuallyCloseLesson;
+actuallyCloseLesson = function () {
+    lessonNav.states = {};
+    lessonNav.max = 0;
+    return _lnCloseLesson.apply(this, arguments);
+};
